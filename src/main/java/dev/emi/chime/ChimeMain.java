@@ -90,7 +90,7 @@ public class ChimeMain implements ModInitializer {
 			return world != null && world.getDimension().isNatural() == value;
 		});
 		register("world/raining", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
-			return world != null && world.isRaining() == value.booleanValue();
+			return world != null && world.isRaining() == value;
 		});
 		register("world/thundering", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
 			return world != null && world.isThundering() == value;
