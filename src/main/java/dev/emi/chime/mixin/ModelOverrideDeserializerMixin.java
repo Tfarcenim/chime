@@ -11,27 +11,27 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
+import net.minecraft.client.renderer.model.ItemOverride;
+import net.minecraft.util.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import dev.emi.chime.ChimeMain;
 import dev.emi.chime.ModelOverrideWrapper;
-import net.minecraft.client.render.model.json.ModelOverride;
-import net.minecraft.util.Identifier;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(ModelOverride.Deserializer.class)
+@Mixin(ItemOverride.Deserializer.class)
 public class ModelOverrideDeserializerMixin {
 	private Map<String, Object> customPredicates;
 	
-	@Inject(at = @At("RETURN"), method = "deserialize", cancellable = true)
-	public void deserialize(JsonElement element, Type type, JsonDeserializationContext context, CallbackInfoReturnable<ModelOverride> info) throws JsonParseException {
+	@Inject(at = @At("RETURN"), method = "deserialize")
+	public void deserialize(JsonElement element, Type type, JsonDeserializationContext context, CallbackInfoReturnable<ItemOverride> info) throws JsonParseException {
 		((ModelOverrideWrapper) info.getReturnValue()).setCustomPredicates(customPredicates);
 	}
 
-	@Inject(at = @At("HEAD"), method = "deserializeMinPropertyValues")
-	private void deserializeMinPropertyValues(JsonObject object, CallbackInfoReturnable<Map<Identifier, Float>> info) {
+	@Inject(at = @At("HEAD"), method = "makeMapResourceValues")
+	private void deserializeMinPropertyValues(JsonObject object, CallbackInfoReturnable<Map<ResourceLocation, Float>> info) {
 		customPredicates = Maps.newHashMap();
 		JsonObject pred = object.getAsJsonObject("predicate");
 		parseCustomPredicates(pred, "");

@@ -11,40 +11,29 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-import net.fabricmc.api.ModInitializer;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.AbstractListTag;
-import net.minecraft.nbt.AbstractNumberTag;
-import net.minecraft.nbt.ByteTag;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.IntTag;
-import net.minecraft.nbt.LongTag;
-import net.minecraft.nbt.ShortTag;
-import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.hit.HitResult;
+
+import net.minecraft.nbt.*;
+import net.minecraft.tags.ITag;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockRayTraceResult;
+import net.minecraft.util.math.EntityRayTraceResult;
+import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.registry.Registry;
+import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.fml.common.Mod;
 
-// TODO move this to client
-@SuppressWarnings({"unchecked", "rawtypes"})
-public class ChimeMain implements ModInitializer {
+@Mod("chime")
+public class ChimeMain {
 	public static final Map<String, CustomModelPredicate> CUSTOM_MODEL_PREDICATES = Maps.newHashMap();
-
-	@Override
-	public void onInitialize() {
-	}
 
 	static {
 		register("nbt", JsonObject.class, (ItemStack stack, ClientWorld world, LivingEntity entity, JsonObject value) -> {
@@ -54,68 +43,68 @@ public class ChimeMain implements ModInitializer {
 			return false;
 		});
 		register("name", Pattern.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Pattern value) -> {
-			return value.matcher(stack.getName().asString()).matches();
+			return value.matcher(stack.getDisplayName().getString()).matches();
 		});
-		register("dimension/id", Identifier.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Identifier value) -> {
-			return world != null && world.getRegistryKey().getValue().equals(value);
+		register("dimension/id", ResourceLocation.class, (ItemStack stack, ClientWorld world, LivingEntity entity, ResourceLocation value) -> {
+			return world != null && world.getDimensionKey().getLocation().equals(value);
 		});
 		register("dimension/has_sky_light", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
-			return world != null && world.getDimension().hasSkyLight() == value;
+			return world != null && world.getDimensionType().hasSkyLight() == value;
 		});
 		register("dimension/has_ceiling", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
-			return world != null && world.getDimension().hasCeiling() == value;
+			return world != null && world.getDimensionType().getHasCeiling() == value;
 		});
 		register("dimension/ultrawarm", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
-			return world != null && world.getDimension().isUltrawarm() == value;
+			return world != null && world.getDimensionType().isUltrawarm() == value;
 		});
 		register("dimension/natural", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
-			return world != null && world.getDimension().isNatural() == value;
+			return world != null && world.getDimensionType().isNatural() == value;
 		});
 		register("dimension/has_ender_dragon_fight", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
-			return world != null && world.getDimension().hasEnderDragonFight() == value;
+			return world != null && world.getDimensionType().doesHasDragonFight() == value;
 		});
 		register("dimension/piglin_safe", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
-			return world != null && world.getDimension().isPiglinSafe() == value;
+			return world != null && world.getDimensionType().isPiglinSafe() == value;
 		});
 		register("dimension/bed_works", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
-			return world != null && world.getDimension().isBedWorking() == value;
+			return world != null && world.getDimensionType().doesBedWork() == value;
 		});
 		register("dimension/respawn_anchor_works", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
-			return world != null && world.getDimension().isRespawnAnchorWorking() == value;
+			return world != null && world.getDimensionType().doesRespawnAnchorWorks() == value;
 		});
 		register("dimension/has_raids", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
-			return world != null && world.getDimension().hasRaids() == value;
+			return world != null && world.getDimensionType().isHasRaids() == value;
 		});
 		register("dimension/natural", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
-			return world != null && world.getDimension().isNatural() == value;
+			return world != null && world.getDimensionType().isNatural() == value;
 		});
 		register("world/raining", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
-			return world != null && world.isRaining() == value.booleanValue();
+			return world != null && world.isRaining() == value;
 		});
 		register("world/thundering", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
 			return world != null && world.isThundering() == value;
 		});
 		register("entity/nbt", JsonObject.class, (ItemStack stack, ClientWorld world, LivingEntity entity, JsonObject value) -> {
 			if (entity != null) {
-				return matchesJsonObject(value, entity.toTag(new CompoundTag()));
+				return matchesJsonObject(value, entity.writeWithoutTypeId(new CompoundNBT()));
 			}
 			return false;
 		});
 		register("entity/x", Range.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Range value) -> {
-			return entity != null && ((Range<Float>) value).contains((float) entity.getZ());
+			return entity != null && ((Range<Float>) value).contains((float) entity.getPosZ());
 		});
 		register("entity/y", Range.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Range value) -> {
-			return entity != null && ((Range<Float>) value).contains((float) entity.getY());
+			return entity != null && ((Range<Float>) value).contains((float) entity.getPosY());
 		});
 		register("entity/z", Range.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Range value) -> {
-			return entity != null && ((Range<Float>) value).contains((float) entity.getZ());
+			return entity != null && ((Range<Float>) value).contains((float) entity.getPosZ());
 		});
 		register("entity/hand", String.class, (ItemStack stack, ClientWorld world, LivingEntity entity, String value) -> {
 			if (entity == null) {
 				return false;
 			}
-			boolean main = entity.getMainHandStack() == stack;
-			boolean off = entity.getOffHandStack() == stack;
+			boolean main = entity.getHeldItemMainhand() == stack;
+			boolean off = entity.getHeldItemOffhand() == stack;
 			switch (value) {
 				case "main":
 					return main;
@@ -133,14 +122,14 @@ public class ChimeMain implements ModInitializer {
 		register("entity/target", String.class, (ItemStack stack, ClientWorld world, LivingEntity entity, String value) -> {
 			String s = "none";
 			if (entity != null) {
-				MinecraftClient client = MinecraftClient.getInstance();
+				Minecraft client = Minecraft.getInstance();
 				if (entity == client.player) {
-					HitResult result = client.crosshairTarget;
-					if (result.getType() == HitResult.Type.BLOCK) {
+					RayTraceResult result = client.objectMouseOver;
+					if (result.getType() == RayTraceResult.Type.BLOCK) {
 						s = "block";
-					} else if (result.getType() == HitResult.Type.ENTITY) {
+					} else if (result.getType() == RayTraceResult.Type.ENTITY) {
 						s = "entity";
-					} else if (result.getType() == HitResult.Type.MISS) {
+					} else if (result.getType() == RayTraceResult.Type.MISS) {
 						s = "miss";
 					}
 				}
@@ -149,38 +138,29 @@ public class ChimeMain implements ModInitializer {
 		});
 		register("entity/target_block/can_mine", Boolean.class, (ItemStack stack, ClientWorld world, LivingEntity entity, Boolean value) -> {
 			BlockState state = raycastBlockState(world, entity);
-			return value == stack.isEffectiveOn(state);
+			return value == stack.canHarvestBlock(state);
 		});
 		register("entity/target_block/id", String.class, (ItemStack stack, ClientWorld world, LivingEntity entity, String value) -> {
 			BlockState state = raycastBlockState(world, entity);
 			if (value.startsWith("#")) {
-				MinecraftClient client = MinecraftClient.getInstance();
-				Identifier id = new Identifier(value.substring(1));
-				net.minecraft.tag.Tag<Block> tag = client.world.getTagManager().getBlocks().getTag(id);
-				if (tag != null && tag.contains(state.getBlock())) {
-					return true;
-				}
+				Minecraft client = Minecraft.getInstance();
+				ResourceLocation id = new ResourceLocation(value.substring(1));
+				ITag<Block> tag = client.world.getTags().getBlockTags().get(id);
+				return tag != null && tag.contains(state.getBlock());
 			} else {
-				if (Registry.BLOCK.getId(state.getBlock()).equals(new Identifier(value))) {
-					return true;
-				}
+				return Registry.BLOCK.getKey(state.getBlock()).equals(new ResourceLocation(value));
 			}
-			return false;
 		});
 		register("entity/target_entity/id", String.class, (ItemStack stack, ClientWorld world, LivingEntity entity, String value) -> {
-			MinecraftClient client = MinecraftClient.getInstance();
+			Minecraft client = Minecraft.getInstance();
 			Entity hit = raycastEntity(world, entity);
 			if (hit != null) {
 				if (value.startsWith("#")) {
-					Identifier id = new Identifier(value.substring(1));
-					net.minecraft.tag.Tag<EntityType<?>> tag = client.world.getTagManager().getEntityTypes().getTag(id);
-					if (tag != null && tag.contains(hit.getType())) {
-						return true;
-					}
+					ResourceLocation id = new ResourceLocation(value.substring(1));
+					ITag<EntityType<?>> tag = client.world.getTags().getEntityTypeTags().get(id);
+					return tag != null && tag.contains(hit.getType());
 				} else {
-					if (EntityType.getId(hit.getType()).equals(new Identifier(value))) {
-						return true;
-					}
+					return EntityType.getKey(hit.getType()).equals(new ResourceLocation(value));
 				}
 			}
 			return false;
@@ -188,7 +168,7 @@ public class ChimeMain implements ModInitializer {
 		register("entity/target_entity/nbt", JsonObject.class, (ItemStack stack, ClientWorld world, LivingEntity entity, JsonObject value) -> {
 			Entity hit = raycastEntity(world, entity);
 			if (hit != null) {
-				return matchesJsonObject(value, hit.toTag(new CompoundTag()));
+				return matchesJsonObject(value, hit.writeWithoutTypeId(new CompoundNBT()));
 			}
 			return false;
 		});
@@ -196,12 +176,12 @@ public class ChimeMain implements ModInitializer {
 
 	private static BlockState raycastBlockState(ClientWorld world, LivingEntity entity) {
 		if (entity != null) {
-			MinecraftClient client = MinecraftClient.getInstance();
+			Minecraft client = Minecraft.getInstance();
 			if (entity == client.player) {
-				HitResult result = client.crosshairTarget;
-				if (result.getType() == HitResult.Type.BLOCK) {
-					BlockHitResult blockResult = (BlockHitResult) result;
-					return world.getBlockState(blockResult.getBlockPos());
+				RayTraceResult result = client.objectMouseOver;
+				if (result.getType() == RayTraceResult.Type.BLOCK) {
+					BlockRayTraceResult blockResult = (BlockRayTraceResult) result;
+					return world.getBlockState(blockResult.getPos());
 				}
 			}
 		}
@@ -210,12 +190,12 @@ public class ChimeMain implements ModInitializer {
 
 	private static Entity raycastEntity(ClientWorld world, LivingEntity entity) {
 		if (entity != null) {
-			MinecraftClient client = MinecraftClient.getInstance();
+			Minecraft client = Minecraft.getInstance();
 			if (entity == client.player) {
-				HitResult result = client.crosshairTarget;
-				if (result.getType() == HitResult.Type.ENTITY) {
-					EntityHitResult entityHitResult = (EntityHitResult) result;
-					return entityHitResult.getEntity();
+				RayTraceResult result = client.objectMouseOver;
+				if (result.getType() == RayTraceResult.Type.ENTITY) {
+					EntityRayTraceResult entityRayTraceResult = (EntityRayTraceResult) result;
+					return entityRayTraceResult.getEntity();
 				}
 			}
 		}
@@ -233,10 +213,10 @@ public class ChimeMain implements ModInitializer {
 			CUSTOM_MODEL_PREDICATES.put(key, new StringCustomModelPredicate((CustomModelPredicateFunction<String>) func));
 		} else if (clazz == Pattern.class) {
 			CUSTOM_MODEL_PREDICATES.put(key, new PatternCustomModelPredicate((CustomModelPredicateFunction<Pattern>) func));
-		} else if (clazz == CompoundTag.class) {
-			CUSTOM_MODEL_PREDICATES.put(key, new CompoundTagCustomModelPredicate((CustomModelPredicateFunction<CompoundTag>) func));
-		} else if (clazz == Identifier.class) {
-			CUSTOM_MODEL_PREDICATES.put(key, new IdentifierCustomModelPredicate((CustomModelPredicateFunction<Identifier>) func));
+		} else if (clazz == CompoundNBT.class) {
+			CUSTOM_MODEL_PREDICATES.put(key, new CompoundTagCustomModelPredicate((CustomModelPredicateFunction<CompoundNBT>) func));
+		} else if (clazz == ResourceLocation.class) {
+			CUSTOM_MODEL_PREDICATES.put(key, new IdentifierCustomModelPredicate((CustomModelPredicateFunction<ResourceLocation>) func));
 		} else if (clazz == Range.class) {
 			CUSTOM_MODEL_PREDICATES.put(key, new FloatRangeCustomModelPredicate((CustomModelPredicateFunction<Range<Float>>) func));
 		} else if (clazz == JsonObject.class) {
@@ -246,7 +226,7 @@ public class ChimeMain implements ModInitializer {
 		}
 	}
 
-	private static boolean matchesJsonObject(JsonObject object, CompoundTag tag) {
+	private static boolean matchesJsonObject(JsonObject object, CompoundNBT tag) {
 		for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
 			String key = entry.getKey();
 			JsonElement element = entry.getValue();
@@ -263,12 +243,12 @@ public class ChimeMain implements ModInitializer {
 		return true;
 	}
 
-	private static boolean matchesJsonArray(JsonArray array, AbstractListTag list) {
+	private static boolean matchesJsonArray(JsonArray array, ListNBT list) {
 		outer:
 		for (JsonElement element : array) {
 			for (Object object : list) {
-				if (object instanceof Tag) {
-					Tag tag = (Tag) object;
+				if (object instanceof INBT) {
+					INBT tag = (INBT) object;
 					if (matchesJsonElement(element, tag)) {
 						continue outer;
 					}
@@ -279,17 +259,17 @@ public class ChimeMain implements ModInitializer {
 		return true;
 	}
 
-	private static boolean matchesJsonElement(JsonElement element, Tag tag) {
+	private static boolean matchesJsonElement(JsonElement element, INBT tag) {
 		if (element.isJsonObject()) {
-			return tag.getType() == 10 && matchesJsonObject(element.getAsJsonObject(), (CompoundTag) tag);
+			return tag.getId() == Constants.NBT.TAG_COMPOUND && matchesJsonObject(element.getAsJsonObject(), (CompoundNBT) tag);
 		} else if (element.isJsonArray()) {
-			return tag instanceof AbstractListTag && matchesJsonArray(element.getAsJsonArray(), (AbstractListTag) tag);
+			return tag instanceof ListNBT && matchesJsonArray(element.getAsJsonArray(), (ListNBT) tag);
 		} else {
 			JsonPrimitive primitive = element.getAsJsonPrimitive();
-			if (tag instanceof AbstractNumberTag) {
-				AbstractNumberTag number = (AbstractNumberTag) tag;
+			if (tag instanceof NumberNBT) {
+				NumberNBT number = (NumberNBT) tag;
 				boolean isInt = false;
-				if (tag instanceof ByteTag || tag instanceof ShortTag || tag instanceof IntTag || tag instanceof LongTag) {
+				if (tag instanceof ByteNBT || tag instanceof ShortNBT || tag instanceof IntNBT || tag instanceof LongNBT) {
 					isInt = true;
 				}
 				if (primitive.isBoolean()) {
@@ -309,9 +289,9 @@ public class ChimeMain implements ModInitializer {
 						return r != null && r.contains(number.getDouble());
 					}
 				}
-			} else if (tag instanceof StringTag) {
+			} else if (tag instanceof StringNBT) {
 				if (primitive.isString()) {
-					return primitive.getAsString().equals(((StringTag) tag).asString());
+					return primitive.getAsString().equals(tag.getString());
 				}
 			}
 		}
@@ -408,7 +388,7 @@ public class ChimeMain implements ModInitializer {
 	}*/
 
 	public static abstract class CustomModelPredicate<T> {
-		private CustomModelPredicateFunction<T> function;
+		private final CustomModelPredicateFunction<T> function;
 
 		public CustomModelPredicate(CustomModelPredicateFunction<T> function) {
 			this.function = function;
@@ -515,31 +495,31 @@ public class ChimeMain implements ModInitializer {
 		}
 	}
 
-	public static class CompoundTagCustomModelPredicate extends CustomModelPredicate<CompoundTag> {
+	public static class CompoundTagCustomModelPredicate extends CustomModelPredicate<CompoundNBT> {
 
-		public CompoundTagCustomModelPredicate(CustomModelPredicateFunction<CompoundTag> function) {
+		public CompoundTagCustomModelPredicate(CustomModelPredicateFunction<CompoundNBT> function) {
 			super(function);
 		}
 
 		@Override
-		public CompoundTag parseType(JsonElement element) {
+		public CompoundNBT parseType(JsonElement element) {
 			try {
-				return StringNbtReader.parse(element.getAsString());
+				return JsonToNBT.getTagFromJson(element.getAsString());
 			} catch(Exception e) {
 				return null;
 			}
 		}
 	}
 
-	public static class IdentifierCustomModelPredicate extends CustomModelPredicate<Identifier> {
+	public static class IdentifierCustomModelPredicate extends CustomModelPredicate<ResourceLocation> {
 
-		public IdentifierCustomModelPredicate(CustomModelPredicateFunction<Identifier> function) {
+		public IdentifierCustomModelPredicate(CustomModelPredicateFunction<ResourceLocation> function) {
 			super(function);
 		}
 
 		@Override
-		public Identifier parseType(JsonElement element) {
-			return new Identifier(element.getAsString());
+		public ResourceLocation parseType(JsonElement element) {
+			return new ResourceLocation(element.getAsString());
 		}
 	}
 
@@ -556,6 +536,6 @@ public class ChimeMain implements ModInitializer {
 	}
 
 	public interface CustomModelPredicateFunction<T> {
-		public boolean matches(ItemStack stack, ClientWorld world, LivingEntity entity, T value);
+		boolean matches(ItemStack stack, ClientWorld world, LivingEntity entity, T value);
 	}
 }

@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "minecraft:item/stick"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "nbt": "{display:{Name:\"{\"text\":\"Diamond\"}\"}}"
+      },
+      "model": "minecraft:item/diamond"
+    }
+  ]
+}
