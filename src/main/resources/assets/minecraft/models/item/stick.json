@@ -6,7 +6,7 @@
   "overrides": [
     {
       "predicate": {
-        "nbt": "{display:{Name:\"{\"text\":\"Diamond\"}\"}}"
+        "nbt": "{display:{Name:\"{\"text\":\"Flame Sword\"}\"}}"
       },
       "model": "minecraft:item/diamond"
     }
